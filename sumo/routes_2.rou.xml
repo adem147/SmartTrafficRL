@@ -1,0 +1,36 @@
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5" maxSpeed="10"/>
+
+    <!-- From E0 -->
+    <flow id="f1_r" type="car" begin="0" end="3600" probability="0.01" from="E0" to="-E5"/>
+    <flow id="f1_s" type="car" begin="0" end="3600" probability="0.01" from="E0" to="-E7"/>
+    <flow id="f1_l" type="car" begin="0" end="3600" probability="0.03" from="E0" to="-E6"/>
+
+    <!-- From E2 -->
+    <flow id="f2_r" type="car" begin="0" end="3600" probability="0.02" from="E2" to="-E6"/>
+    <flow id="f2_s" type="car" begin="0" end="3600" probability="0.01" from="E2" to="-E5"/>
+    <flow id="f2_l" type="car" begin="0" end="3600" probability="0.01" from="E2" to="-E7"/>
+
+    <!-- From E3 -->
+    <flow id="f3_r" type="car" begin="0" end="3600" probability="0.01" from="E3" to="-E7"/>
+    <flow id="f3_s" type="car" begin="0" end="3600" probability="0.02" from="E3" to="-E6"/>
+    <flow id="f3_l" type="car" begin="0" end="3600" probability="0.01" from="E3" to="-E5"/>
+
+    <!-- From E5 -->
+    <flow id="f5_r" type="car" begin="0" end="3600" probability="0.01" from="E5" to="-E7"/>
+    <flow id="f5_s" type="car" begin="0" end="3600" probability="0.02" from="E5" to="-E6"/>
+    <flow id="f5_l" type="car" begin="0" end="3600" probability="0.03" from="E5" to="-E2"/>
+
+    <!-- From E6 -->
+    <flow id="f6_r" type="car" begin="0" end="3600" probability="0.02" from="E6" to="-E2"/>
+    <flow id="f6_s" type="car" begin="0" end="3600" probability="0.01" from="E6" to="-E5"/>
+    <flow id="f6_l" type="car" begin="0" end="3600" probability="0.01" from="E6" to="-E7"/>
+
+    <!-- From E7 -->
+    <flow id="f7_r" type="car" begin="0" end="3600" probability="0.01" from="E7" to="-E5"/>
+    <flow id="f7_s" type="car" begin="0" end="3600" probability="0.02" from="E7" to="-E2"/>
+    <flow id="f7_l" type="car" begin="0" end="3600" probability="0.01" from="E7" to="-E6"/>
+
+</routes>
