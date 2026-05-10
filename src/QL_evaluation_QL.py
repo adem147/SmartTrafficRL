@@ -96,6 +96,8 @@ def run_episode():
 
     state = get_state()
     traci.trafficlight.setPhase(TLS_ID, PHASE_NS)
+    
+    total_v = 0
 
     while step < MAX_STEPS:
         traci.simulationStep()
@@ -106,6 +108,7 @@ def run_episode():
         total_waiting += waiting
         total_queue += queue
         total_passed += step_passed
+        
 
         if step % T_DECISION == 0:
 
@@ -117,14 +120,20 @@ def run_episode():
                 last_switch_step = step
 
             state = get_state()
+            
+       
+        incoming_lanes = NS_EDGES + EW_EDGES
+        total_v += sum(traci.edge.getLastStepVehicleNumber(l) for l in incoming_lanes)
+
 
     traci.close()
 
     avg_waiting = total_waiting / MAX_STEPS
     avg_queue = total_queue / MAX_STEPS
     avg_flow = total_passed / MAX_STEPS
+    avg_v = total_v/MAX_STEPS
 
-    return avg_waiting, avg_queue, avg_flow
+    return avg_waiting, avg_queue, avg_flow,avg_v
 
 # =====================
 # MAIN LOOP
@@ -135,14 +144,16 @@ if __name__ == "__main__":
     waiting_times = []
     queue_lengths = []
     flows = []
+    vehicle = []
 
     for ep in range(EPISODES):
 
-        w, q, f = run_episode()
+        w, q, f,v = run_episode()
 
         waiting_times.append(w)
         queue_lengths.append(q)
         flows.append(f)
+        vehicle.append(v)
 
         print(
             f"Episode {ep+1}/{EPISODES} | "
@@ -158,11 +169,13 @@ if __name__ == "__main__":
     avg_waiting = sum(waiting_times) / EPISODES
     avg_queue = sum(queue_lengths) / EPISODES
     avg_flow = sum(flows) / EPISODES
+    avg_v = sum(vehicle) / EPISODES
 
     print("\n===== RL EVALUATION RESULTS =====")
     print(f"Avg Waiting Time: {avg_waiting:.2f}")
     print(f"Avg Queue Length: {avg_queue:.2f}")
     print(f"Avg Flow: {avg_flow:.2f}")
+    print(f"Avg Vehicle: {avg_v:.2f}")
     
     # =====================
     # SAVE RESULTS
@@ -174,7 +187,7 @@ if __name__ == "__main__":
         "flows": flows
     }
 
-    file_path = os.path.join(RESULTS_DIR, f"rl_eval_results_{EPISODES}.pkl")
+    file_path = os.path.join(RESULTS_DIR, f"QL_eval_results_{EPISODES}.pkl")
 
     with open(file_path, "wb") as f:
         pickle.dump(results, f)

@@ -1,7 +1,7 @@
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
 
-    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5" maxSpeed="10"/>
+    <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5" maxSpeed="13.89"/>
 
     <!-- From E0 -->
     <flow id="f1_r" type="car" begin="0" end="3600" probability="0.01" from="E0" to="-E5"/>

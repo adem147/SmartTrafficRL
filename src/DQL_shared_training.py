@@ -18,8 +18,8 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 
 SUMO_BINARY = "sumo"
 SUMO_CFG = os.path.join(BASE_DIR, "sumo", "simulation_2.sumocfg")
-SAVE_EVERY = 100 
-MODEL_FILE = os.path.join(RESULTS_DIR, "dqn_shared_intersections.pt")
+SAVE_EVERY = 100
+MODEL_FILE = os.path.join(RESULTS_DIR, "dqn_shared_fixed.pt")
 
 TLS_IDS = ["J1", "J5"]
 
@@ -34,10 +34,19 @@ OUT_EDGES = {
 }
 
 PHASE_NS = 0
+PHASE_NS_YELLOW = 1   # yellow after NS green
 PHASE_EW = 2
+PHASE_EW_YELLOW = 3   # yellow after EW green
 ACTIONS = [PHASE_NS, PHASE_EW]
 
+# Map each green phase to its corresponding yellow phase
+YELLOW_PHASE = {
+    PHASE_NS: PHASE_NS_YELLOW,
+    PHASE_EW: PHASE_EW_YELLOW,
+}
+
 T_DECISION = 10
+YELLOW_DURATION = 2   # sim steps for yellow before switching to new green
 MAX_STEPS = 600
 EPISODES = 3000
 
@@ -62,16 +71,23 @@ w_flow = 1
 
 # =====================
 # STATE
+# State: [ns_queue_norm, ew_queue_norm, agent_id_onehot_0, agent_id_onehot_1]
+# One-hot encoding avoids the implicit ordinal relationship of scalar 0/1 IDs.
 # =====================
 
-def get_shared_state():
-    j1_ns = sum(traci.lane.getLastStepHaltingNumber(l) for l in AGENTS["J1"]["NS"])
-    j1_ew = sum(traci.lane.getLastStepHaltingNumber(l) for l in AGENTS["J1"]["EW"])
+# Fixed one-hot vectors per agent
+AGENT_ONEHOT = {
+    "J1": [1.0, 0.0],
+    "J5": [0.0, 1.0],
+}
 
-    j5_ns = sum(traci.lane.getLastStepHaltingNumber(l) for l in AGENTS["J5"]["NS"])
-    j5_ew = sum(traci.lane.getLastStepHaltingNumber(l) for l in AGENTS["J5"]["EW"])
+def get_local_state(tls_id):
+    ns = sum(traci.lane.getLastStepHaltingNumber(l) for l in AGENTS[tls_id]["NS"])
+    ew = sum(traci.lane.getLastStepHaltingNumber(l) for l in AGENTS[tls_id]["EW"])
 
-    return np.array([j1_ns/10, j1_ew/10, j5_ns/10, j5_ew/10], dtype=np.float32)
+    one_hot = AGENT_ONEHOT[tls_id]  # [1,0] or [0,1] — no ordinal bias
+
+    return np.array([ns / 10, ew / 10] + one_hot, dtype=np.float32)
 
 # =====================
 # METRICS
@@ -102,13 +118,14 @@ def get_reward(waiting, queue, flow):
 
 # =====================
 # MODEL
+# Input size is now 4: [ns_norm, ew_norm, onehot_0, onehot_1]
 # =====================
 
 class DQN(nn.Module):
     def __init__(self):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(4, 64),
+            nn.Linear(4, 64),   # 4 inputs: ns, ew, agent_onehot[0], agent_onehot[1]
             nn.ReLU(),
             nn.Linear(64, 64),
             nn.ReLU(),
@@ -134,10 +151,10 @@ class ReplayBuffer:
         s, a, r, s2, d = zip(*batch)
 
         return (
-            torch.tensor(s, dtype=torch.float32),
+            torch.tensor(np.array(s), dtype=torch.float32),
             torch.tensor(a),
             torch.tensor(r, dtype=torch.float32),
-            torch.tensor(s2, dtype=torch.float32),
+            torch.tensor(np.array(s2), dtype=torch.float32),
             torch.tensor(d, dtype=torch.float32)
         )
 
@@ -193,7 +210,7 @@ def run_episode(policy, target, optimizer, memory):
         traci.trafficlight.setPhase(tls, PHASE_NS)
 
     step = 0
-    state = get_shared_state()
+    states = {tls: get_local_state(tls) for tls in TLS_IDS}
     decision_counter = 0
 
     total_reward = 0
@@ -205,11 +222,29 @@ def run_episode(policy, target, optimizer, memory):
     interval_q = {tls: 0 for tls in TLS_IDS}
     interval_f = {tls: 0 for tls in TLS_IDS}
 
+    # --- Yellow phase transition tracking ---
+    # current_green: the green phase each TLS is on (or heading to)
+    current_green = {tls: PHASE_NS for tls in TLS_IDS}
+    # yellow_countdown: steps remaining in yellow; 0 means not in yellow
+    yellow_countdown = {tls: 0 for tls in TLS_IDS}
+    # pending_green: the green phase to apply once yellow expires
+    pending_green = {tls: None for tls in TLS_IDS}
+
     while step < MAX_STEPS:
 
         traci.simulationStep()
         step += 1
 
+        # --- Advance yellow transitions ---
+        for tls in TLS_IDS:
+            if yellow_countdown[tls] > 0:
+                yellow_countdown[tls] -= 1
+                if yellow_countdown[tls] == 0 and pending_green[tls] is not None:
+                    traci.trafficlight.setPhase(tls, pending_green[tls])
+                    current_green[tls] = pending_green[tls]
+                    pending_green[tls] = None
+
+        # --- Collect metrics every step ---
         for tls in TLS_IDS:
             w, q, f = collect_metrics(tls)
 
@@ -221,35 +256,49 @@ def run_episode(policy, target, optimizer, memory):
             interval_q[tls] += q
             interval_f[tls] += f
 
+        # --- Decision point ---
         if step % T_DECISION == 0:
 
-            action = choose_action(state, policy)
-            phase = ACTIONS[action]
+            actions = {}
 
             for tls in TLS_IDS:
-                traci.trafficlight.setPhase(tls, phase)
+                a = choose_action(states[tls], policy)
+                actions[tls] = a
+                desired_green = ACTIONS[a]
 
-            reward_total = 0
+                if desired_green != current_green[tls]:
+                    # Switch needed: go through yellow first
+                    yellow_phase = YELLOW_PHASE[current_green[tls]]
+                    traci.trafficlight.setPhase(tls, yellow_phase)
+                    pending_green[tls] = desired_green
+                    yellow_countdown[tls] = YELLOW_DURATION
+                else:
+                    # No switch: re-affirm the current green (already set)
+                    traci.trafficlight.setPhase(tls, desired_green)
 
+            done = (step >= MAX_STEPS)
+
+            # Store experiences and compute rewards
             for tls in TLS_IDS:
                 avg_w = interval_w[tls] / T_DECISION
                 avg_q = interval_q[tls] / T_DECISION
                 avg_f = interval_f[tls] / T_DECISION
 
-                reward_total += get_reward(avg_w, avg_q, avg_f)
+                reward = get_reward(avg_w, avg_q, avg_f)
+                next_state = get_local_state(tls)
+
+                memory.add(states[tls], actions[tls], reward, next_state, done)
+
+                states[tls] = next_state
+                total_reward += reward
 
                 interval_w[tls] = 0
                 interval_q[tls] = 0
                 interval_f[tls] = 0
 
-            next_state = get_shared_state()
-            done = (step >= MAX_STEPS)
-
-            memory.add(state, action, reward_total, next_state, done)
-            train_step(policy, target, optimizer, memory)
-
-            state = next_state
-            total_reward += reward_total
+            # Train once per agent — matches the 2x experience throughput IQL gets
+            for _ in TLS_IDS:
+                train_step(policy, target, optimizer, memory)
 
             decision_counter += 1
             if decision_counter % TARGET_UPDATE == 0:
@@ -294,13 +343,11 @@ if __name__ == "__main__":
             f"Ep {ep+1}/{EPISODES} | "
             f"R: {r:.2f} | W: {w:.2f} | Q: {q:.2f} | F: {f:.2f} | eps: {epsilon:.3f}"
         )
-        
+
         if (ep + 1) % SAVE_EVERY == 0:
             torch.save(policy.state_dict(), MODEL_FILE)
             print("💾 Model saved")
 
-
-    # save results (same format as IQL)
     data = {
         "rewards": rewards,
         "waiting_times": waits,
@@ -308,9 +355,10 @@ if __name__ == "__main__":
         "flows": flows
     }
 
-    with open(os.path.join(RESULTS_DIR, f"DQN_shared_results_{EPISODES}.pkl"), "wb") as f:
+    with open(os.path.join(RESULTS_DIR, f"DQN_shared_fixed_{EPISODES}.pkl"), "wb") as f:
         pickle.dump(data, f)
 
     torch.save(policy.state_dict(), MODEL_FILE)
 
     print("🎉 Training complete")
+
