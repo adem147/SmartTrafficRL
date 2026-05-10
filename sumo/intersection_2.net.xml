@@ -183,17 +183,18 @@
     </edge>
 
     <tlLogic id="J1" type="static" programID="0" offset="0">
-        <phase duration="42" state="GGgrrrGGgrrr"/>
-        <phase duration="3"  state="yyyrrryyyrrr"/>
-        <phase duration="42" state="rrrGGgrrrGGg"/>
-        <phase duration="3"  state="rrryyyrrryyy"/>
-    </tlLogic>
-    <tlLogic id="J5" type="static" programID="0" offset="0">
-        <phase duration="42" state="GGgrrrGGgrrr"/>
-        <phase duration="3"  state="yyyrrryyyrrr"/>
-        <phase duration="42" state="rrrGGgrrrGGg"/>
-        <phase duration="3"  state="rrryyyrrryyy"/>
-    </tlLogic>
+    <phase duration="30" state="GGgrrrGGgrrr"/>
+    <phase duration="3"  state="yyyrrryyyrrr"/>
+    <phase duration="30" state="rrrGGgrrrGGg"/>
+    <phase duration="3"  state="rrryyyrrryyy"/>
+</tlLogic>
+
+<tlLogic id="J5" type="static" programID="0" offset="0">
+    <phase duration="30" state="GGgrrrGGgrrr"/>
+    <phase duration="3"  state="yyyrrryyyrrr"/>
+    <phase duration="30" state="rrrGGgrrrGGg"/>
+    <phase duration="3"  state="rrryyyrrryyy"/>
+</tlLogic>
 
     <junction id="J0" type="dead_end" x="-100.00" y="0.00" incLanes="-E0_0" intLanes="" shape="-100.00,0.00 -100.00,3.20 -100.00,0.00"/>
     <junction id="J1" type="traffic_light" x="0.00" y="0.00" incLanes="E2_0 E1_0 E3_0 E0_0" intLanes=":J1_0_0 :J1_1_0 :J1_12_0 :J1_3_0 :J1_4_0 :J1_13_0 :J1_6_0 :J1_7_0 :J1_14_0 :J1_9_0 :J1_10_0 :J1_15_0" shape="-3.20,7.20 3.20,7.20 3.64,4.98 4.20,4.20 4.98,3.64 5.98,3.31 7.20,3.20 7.20,-3.20 4.98,-3.64 4.20,-4.20 3.64,-4.98 3.31,-5.98 3.20,-7.20 -3.20,-7.20 -3.64,-4.98 -4.20,-4.20 -4.98,-3.64 -5.98,-3.31 -7.20,-3.20 -7.20,3.20 -4.98,3.64 -4.20,4.20 -3.64,4.98 -3.31,5.98">
