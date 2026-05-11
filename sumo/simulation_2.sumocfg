@@ -2,8 +2,8 @@
 
 <configuration>
     <input>
-        <net-file value="intersection.net.xml"/>
-        <route-files value="routes.rou.xml"/>
+        <net-file value="intersection_2.net.xml"/>
+        <route-files value="routes_2.rou.xml"/>
     </input>
 
     <time>
@@ -11,4 +11,3 @@
         <end value="3600"/>
     </time>
 </configuration>
-

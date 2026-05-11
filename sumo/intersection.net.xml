@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- generated on 2026-02-13T21:28:09.768149+01:00 by Eclipse SUMO netedit 1.26.0
@@ -105,11 +106,18 @@
     </edge>
 
     <tlLogic id="J1" type="static" programID="0" offset="0">
-        <phase duration="42" state="GGgrrrGGgrrr"/>
-        <phase duration="3"  state="yyyrrryyyrrr"/>
-        <phase duration="42" state="rrrGGgrrrGGg"/>
-        <phase duration="3"  state="rrryyyrrryyy"/>
-    </tlLogic>
+    <!-- NS green -->
+    <phase duration="30" state="GGgrrrGGgrrr"/>
+    
+    <!-- NS yellow -->
+    <phase duration="3" state="yyyrrryyyrrr"/>
+    
+    <!-- EW green -->
+    <phase duration="30" state="rrrGGgrrrGGg"/>
+    
+    <!-- EW yellow -->
+    <phase duration="3" state="rrryyyrrryyy"/>
+</tlLogic>
 
     <junction id="J0" type="dead_end" x="0.00" y="0.00" incLanes="-E0_0" intLanes="" shape="0.00,0.00 0.00,3.20 0.00,0.00"/>
     <junction id="J1" type="traffic_light" x="100.00" y="0.00" incLanes="-E2_0 -E1_0 -E3_0 E0_0" intLanes=":J1_0_0 :J1_1_0 :J1_12_0 :J1_3_0 :J1_4_0 :J1_13_0 :J1_6_0 :J1_7_0 :J1_14_0 :J1_9_0 :J1_10_0 :J1_15_0" shape="96.80,7.20 103.20,7.20 103.64,4.98 104.20,4.20 104.98,3.64 105.98,3.31 107.20,3.20 107.20,-3.20 104.98,-3.64 104.20,-4.20 103.64,-4.98 103.31,-5.98 103.20,-7.20 96.80,-7.20 96.36,-4.98 95.80,-4.20 95.02,-3.64 94.02,-3.31 92.80,-3.20 92.80,3.20 95.02,3.64 95.80,4.20 96.36,4.98 96.69,5.98">
@@ -166,3 +174,4 @@
     <connection from=":J1_15" to="E2" fromLane="0" toLane="0" dir="l" state="M"/>
 
 </net>
+>>>>>>> updated
