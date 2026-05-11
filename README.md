@@ -53,22 +53,6 @@ Neural network-based method that approximates Q-values for more complex state re
 
 ---
 
-## Project Structure
-
-SmartTrafficRL/
-│
-├── sumo/                  # SUMO network and configuration files
-├── src/
-│   ├── QL_training.py     # Q-Learning implementation
-│   ├── DQN_training.py    # Deep Q-Learning implementation
-│   ├── environment.py     # SUMO interaction logic
-│
-├── results/               # Logs, plots, evaluation metrics
-├── config/                # Simulation configuration files
-└── README.md
-
----
-
 ## Requirements
 
 - Python 3.8+
